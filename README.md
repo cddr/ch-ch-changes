@@ -11,8 +11,9 @@ $ rbenv rehash
 $ ch-ch-changes > Changelog.md
 ```
 
-ch-ch-changes reads your git history and writes to the standard output in the
-following format
+Invoking `ch-ch-changes` at the root of a project under git source control
+reads your git history and writes to the standard output in the following
+format.
 
 ```
 # Changelog
@@ -27,6 +28,12 @@ following format
  * writes an entry
  * for each commit between v1.0.0 and v1.0.1
 ```
+
+## Contributing
+
+`ch-ch-changes` is implemented as a Ruby Script using the [rugged](https://github.com/libgit2/rugged)
+bindings to libgit2. Pull requests and suggestions (and especially bug reports) are welcome through the
+standard channels
 
 ## License
 
