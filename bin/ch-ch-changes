@@ -1,0 +1,59 @@
+#!/usr/bin/env ruby
+require 'rugged'
+require 'semantic'
+require 'pathname'
+
+REPO = Rugged::Repository.new("./.git")
+
+def sorted_tags
+  repo = REPO
+  repo.refs("refs/tags/v*").map do |ref|
+    name = Pathname.new ref.name
+    begin
+      semver = name.basename.to_s[1..-1]
+      {:semver => Semantic::Version.new(semver),
+        :ref => ref}
+    rescue ArgumentError
+      nil
+    end
+  end.compact.sort {|a, b| a[:semver] <=> b[:semver] } .reverse
+end
+
+def print_commit (commit)
+  header, *body = commit.message.lines
+  puts " * #{header}"
+end
+
+def commits_between(from, to)
+  repo = REPO
+  walker = Rugged::Walker.new repo
+
+  if (from.is_a?(Rugged::Tag) || from.nil?) && (to.is_a?(Rugged::Tag) || to.is_a?(String))
+    walker.push to.is_a?(String) ? to : to.target
+    walker.hide from.target if from
+
+    walker.walk do |commit|
+      yield commit
+    end
+  else
+    puts "  Could not parse commit history for the range"
+    puts "    from: #{from}"
+    puts "    to: #{to}"
+  end
+end
+
+([REPO.head.target] + sorted_tags || [nil]).each_slice(2) do |after, before|
+  if after == REPO.head.target
+    puts "## Unreleased Changes"
+    from = REPO.lookup(before[:ref].target) if before
+    to = after
+    commits_between from, after do |commit|
+      print_commit commit
+    end
+  else
+    puts "## #{before[:semver]} to #{after[:semver]}"
+    commits_between REPO.lookup(before[:ref].target), REPO.lookup(after[:ref].target) do |commit|
+      print_commit commit
+    end
+  end
+end
