@@ -1,6 +1,6 @@
 # ch-ch-changes
 
-Simple script to generate a Changelog.md from your project's git history.
+Generate a Changelog.md from your project's git history.
 
 ## Usage
 
@@ -9,6 +9,23 @@ $ cd $WICKED_GOOD_PROJECT
 $ gem install ch-ch-changes
 $ rbenv rehash
 $ ch-ch-changes > Changelog.md
+```
+
+ch-ch-changes reads your git history and writes to the standard output in the
+following format
+
+```
+# Changelog
+
+## Unreleased Changes
+ * a bullet entry
+ * for each commit
+ * since the last tagged release
+
+## v1.0.0 to v1.0.1
+ * for each pair of semver tags
+ * writes an entry
+ * for each commit between v1.0.0 and v1.0.1
 ```
 
 ## License
