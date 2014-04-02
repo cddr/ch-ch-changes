@@ -27,7 +27,14 @@ format.
  * for each pair of semver tags
  * writes an entry
  * for each commit between v1.0.0 and v1.0.1
+
+   If the commit message includes content in the 'detail' section
+   it will be included like this
 ```
+
+Other than the formatting described above, we make no effort to clean up your
+project's history. You are encouraged to write good commit messages. Here are
+[5 Useful Tips For a Better Commit Message](http://robots.thoughtbot.com/5-useful-tips-for-a-better-commit-message)
 
 ## Contributing
 
