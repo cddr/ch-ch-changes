@@ -21,7 +21,9 @@ end
 
 def print_commit (commit)
   header, *body = commit.message.lines
+  indented_body = body.map { |line| "   #{line}" }
   puts " * #{header}"
+  puts "   #{indented_body.join}" unless body == []
 end
 
 def commits_between(from, to)
