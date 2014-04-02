@@ -4,19 +4,30 @@ require 'semantic'
 require 'pathname'
 
 REPO = Rugged::Repository.new("./.git")
+HEAD = {:semver => "HEAD", :ref => REPO.head}
+INIT = {:semver => "INIT", :repo => nil}
+CURRENT_BRANCH = REPO.head.name.sub(/^refs\/heads\//, '')
+
+# wraps the input tag in a dict together with the semver
+def semversion(tag)
+  semver = Pathname.new(tag.name).basename.to_s[1..-1]
+  begin
+    Semantic::Version.new(semver)
+  rescue ArgumentError
+    nil
+  end
+end
 
 def sorted_tags
   repo = REPO
-  repo.refs("refs/tags/v*").map do |ref|
-    name = Pathname.new ref.name
-    begin
-      semver = name.basename.to_s[1..-1]
-      {:semver => Semantic::Version.new(semver),
-        :ref => ref}
-    rescue ArgumentError
-      nil
-    end
-  end.compact.sort {|a, b| a[:semver] <=> b[:semver] } .reverse
+  wrapped_refs = repo.refs("refs/tags/v*").map do |ref|
+    {:semver => semversion(ref),
+      :ref => ref}
+  end.compact
+
+  wrapped_refs.sort do |a, b|
+    a[:semver] <=> b[:semver]
+  end.reverse
 end
 
 def print_commit (commit)
@@ -29,9 +40,9 @@ end
 def commits_between(from, to)
   repo = REPO
   walker = Rugged::Walker.new repo
-
-  if (from.is_a?(Rugged::Tag) || from.nil?) && (to.is_a?(Rugged::Tag) || to.is_a?(String))
-    walker.push to.is_a?(String) ? to : to.target
+  to = to.target if to.respond_to?(:target)
+  if (from.is_a?(Rugged::Tag) || from.nil?)
+    walker.push to
     walker.hide from.target if from
 
     walker.walk do |commit|
@@ -44,18 +55,24 @@ def commits_between(from, to)
   end
 end
 
-([REPO.head.target] + sorted_tags || [nil]).each_slice(2) do |after, before|
-  if after == REPO.head.target
-    puts "## Unreleased Changes"
-    from = REPO.lookup(before[:ref].target) if before
-    to = after
-    commits_between from, after do |commit|
+puts "# Changelog"
+([HEAD] + sorted_tags + [INIT]).each_cons(2) do |later, earlier|
+  if later[:ref] == HEAD[:ref]
+    puts
+    puts "## Unreleased Changes (#{CURRENT_BRANCH})"
+    from = REPO.lookup(earlier[:ref].target) if earlier
+    to = REPO.lookup(later[:ref].target)
+    commits_between from, to do |commit|
       print_commit commit
     end
   else
-    puts "## #{before[:semver]} to #{after[:semver]}"
-    commits_between REPO.lookup(before[:ref].target), REPO.lookup(after[:ref].target) do |commit|
+    puts
+    puts "## from #{earlier[:semver]} to #{later[:semver]}"
+    from = REPO.lookup(earlier[:ref].target) if earlier[:ref]
+    to = REPO.lookup(later[:ref].target)
+    commits_between from, to do |commit|
       print_commit commit
     end
   end
 end
+
