@@ -1,4 +1,4 @@
-
+WARNING: This was an experiment. I don't recommend this approach of maintaining a changelog. A changelog should include only user visible changes.
 
 # ch-ch-changes
 
